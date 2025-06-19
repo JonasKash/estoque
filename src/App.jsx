@@ -14,10 +14,8 @@ function App() {
   const [message, setMessage] = useState(null)
   const [stats, setStats] = useState(null)
 
-  // Detectar se estamos em produção ou desenvolvimento
-  const API_BASE_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:5000' 
-    : window.location.origin
+  // Sempre usar a URL interna do serviço Docker Swarm
+  const API_BASE_URL = 'http://controle-estoque-api:5000';
 
   const searchStock = async () => {
     if (!query.trim()) {
