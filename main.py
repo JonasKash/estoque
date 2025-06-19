@@ -153,37 +153,42 @@ def normalize_peca_num(num):
     return str(num).replace(' ', '').upper()
 
 def search_stock(query):
-    """Busca no estoque pelo número da peça, descrição ou localização"""
+    """Busca no estoque pelo número da peça, descrição ou localização (flexível e normalizada)"""
     if df is None or df.empty:
         logger.error("DataFrame vazio ou não inicializado")
         return []
     try:
-        query = str(query).strip().upper().replace(' ', '')
-        logger.info(f"Buscando por: {query}")
-        results = []
-        # Busca por número da peça (normalizado)
-        if 'Numero da Peca' in df.columns:
-            if '_peca_normalizada' not in df.columns:
-                df['_peca_normalizada'] = df['Numero da Peca'].apply(normalize_peca_num)
-            peca_matches = df[df['_peca_normalizada'].str.contains(query, na=False)]
-            if not peca_matches.empty:
-                results.extend(peca_matches.to_dict('records'))
-                logger.info(f"Encontrados {len(peca_matches)} resultados por número da peça (normalizado)")
-        # Busca por descrição
-        desc_matches = df[df['Descricao'].str.contains(query, case=False, na=False)]
-        if not desc_matches.empty:
-            results.extend(desc_matches.to_dict('records'))
-            logger.info(f"Encontrados {len(desc_matches)} resultados por descrição")
-        # Busca por localização
-        loc_matches = df[df['Localizacao'].str.contains(query, case=False, na=False)]
-        if not loc_matches.empty:
-            results.extend(loc_matches.to_dict('records'))
-            logger.info(f"Encontrados {len(loc_matches)} resultados por localização")
+        query_term = str(query).strip()
+        if not query_term:
+            return []
+        # Normaliza o termo de busca: minúsculas e sem espaços internos
+        normalized_query = query_term.lower().replace(" ", "")
+        results_df = df.copy()
+        # Coluna para busca por 'Numero da Peca'
+        if 'Numero da Peca' in results_df.columns:
+            results_df['search_numero_da_peca'] = results_df['Numero da Peca'].astype(str).str.lower().str.replace(" ", "")
+            condition_numero_peca = results_df['search_numero_da_peca'].str.contains(normalized_query, na=False)
+        else:
+            condition_numero_peca = pd.Series([False] * len(results_df))
+        # Coluna para busca por 'Descricao'
+        if 'Descricao' in results_df.columns:
+            results_df['search_descricao'] = results_df['Descricao'].astype(str).str.lower()
+            condition_descricao = results_df['search_descricao'].str.contains(query_term.lower(), na=False)
+        else:
+            condition_descricao = pd.Series([False] * len(results_df))
+        # Coluna para busca por 'Localizacao'
+        if 'Localizacao' in results_df.columns:
+            results_df['search_localizacao'] = results_df['Localizacao'].astype(str).str.lower().str.replace(" ", "")
+            condition_localizacao = results_df['search_localizacao'].str.contains(normalized_query, na=False)
+        else:
+            condition_localizacao = pd.Series([False] * len(results_df))
+        # Combina as condições (OU lógico)
+        combined_condition = condition_numero_peca | condition_descricao | condition_localizacao
+        results_df = results_df[combined_condition]
         # Remover duplicatas mantendo o mais recente (maior data)
         seen = {}
-        for result in results:
+        for _, result in results_df.iterrows():
             key = (result['Numero da Peca'], result['Descricao'], result['Localizacao'])
-            # Extrair data para ordenação (formato dd/mm/yyyy)
             fonte_data = result.get('FonteData', '')
             try:
                 data_tuple = tuple(map(int, fonte_data.split('/')[::-1]))  # (yyyy, mm, dd)
@@ -191,8 +196,7 @@ def search_stock(query):
                 data_tuple = (0, 0, 0)
             if key not in seen or data_tuple > seen[key][0]:
                 seen[key] = (data_tuple, result)
-        # Ordenar por data decrescente e pegar só o mais recente de cada key
-        unique_results = [v[1] for v in seen.values()]
+        unique_results = [v[1].to_dict() for v in seen.values()]
         # Substituir campo Fonte pelo FonteData para exibir só a data
         for r in unique_results:
             r['Fonte'] = r.get('FonteData', r.get('Fonte', ''))
