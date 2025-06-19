@@ -326,7 +326,7 @@ if __name__ == '__main__':
         logger.info("  - POST /search (busca no estoque)")
     else:
         logger.error("Erro ao carregar dados. Verifique os logs acima.")
-    # Iniciar agendamento em thread separada
+    # Iniciar agendamento em thread separada2
     t = threading.Thread(target=schedule_reload, daemon=True)
     t.start()
     app.run(host='0.0.0.0', port=5000, debug=True)

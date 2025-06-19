@@ -245,7 +245,7 @@ function App() {
                 </ul>
               </div>
               <div className="space-y-2">
-                <h4 className="font-semibold">Por Localização:</h4>
+                <h4 className="font-semibold">Por Localização:</h4> 
                 <ul className="text-sm text-gray-600 space-y-1">
                   <li>• "estrado 5"</li>
                   <li>• "lubri"</li>
