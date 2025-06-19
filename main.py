@@ -127,6 +127,8 @@ def load_spreadsheets():
                     continue
                 temp_df['Fonte'] = os.path.basename(file)
                 temp_df['FonteData'] = extrair_data_planilha(os.path.basename(file))
+                # NOVO: criar coluna normalizada já no carregamento
+                temp_df['Numero da Peca Normalizado'] = temp_df['Numero da Peca'].astype(str).str.lower().str.replace(r'\s+', '', regex=True)
                 for col in temp_df.columns:
                     if temp_df[col].dtype == 'object':
                         temp_df[col] = temp_df[col].astype(str).str.strip()
@@ -158,28 +160,25 @@ def search_stock(query):
         logger.error("DataFrame vazio ou não inicializado")
         return []
     try:
-        query_term = str(query).strip()
+        query_term = str(query).strip().lower().replace(' ', '')
         if not query_term:
             return []
-        # Normaliza o termo de busca: minúsculas e sem espaços internos
-        normalized_query = query_term.lower().replace(" ", "")
         results_df = df.copy()
-        # Coluna para busca por 'Numero da Peca'
-        if 'Numero da Peca' in results_df.columns:
-            results_df['search_numero_da_peca'] = results_df['Numero da Peca'].astype(str).str.lower().str.replace(" ", "")
-            condition_numero_peca = results_df['search_numero_da_peca'].str.contains(normalized_query, na=False)
+        # Busca por 'Numero da Peca Normalizado'
+        if 'Numero da Peca Normalizado' in results_df.columns:
+            condition_numero_peca = results_df['Numero da Peca Normalizado'].str.contains(query_term, na=False)
         else:
             condition_numero_peca = pd.Series([False] * len(results_df))
-        # Coluna para busca por 'Descricao'
+        # Busca por descrição (mantendo espaços internos)
         if 'Descricao' in results_df.columns:
             results_df['search_descricao'] = results_df['Descricao'].astype(str).str.lower()
-            condition_descricao = results_df['search_descricao'].str.contains(query_term.lower(), na=False)
+            condition_descricao = results_df['search_descricao'].str.contains(query_term, na=False)
         else:
             condition_descricao = pd.Series([False] * len(results_df))
-        # Coluna para busca por 'Localizacao'
+        # Busca por localização (sem espaços)
         if 'Localizacao' in results_df.columns:
-            results_df['search_localizacao'] = results_df['Localizacao'].astype(str).str.lower().str.replace(" ", "")
-            condition_localizacao = results_df['search_localizacao'].str.contains(normalized_query, na=False)
+            results_df['search_localizacao'] = results_df['Localizacao'].astype(str).str.lower().str.replace(r'\s+', '', regex=True)
+            condition_localizacao = results_df['search_localizacao'].str.contains(query_term, na=False)
         else:
             condition_localizacao = pd.Series([False] * len(results_df))
         # Combina as condições (OU lógico)
