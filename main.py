@@ -9,6 +9,7 @@ import unicodedata
 import threading
 import schedule
 import time
+from openpyxl import load_workbook  # Importar openpyxl para leitura bruta
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -42,37 +43,67 @@ def normalize_column(col):
     col = col.replace('localizacao', 'localizacao').replace('localização', 'localizacao')
     return col
 
+def load_data_from_file(file_path, file_name):
+    logger.info(f"Tentando carregar {file_path}")
+    df = None
+    try:
+        # Primeira tentativa (como no seu código original)
+        df = pd.read_excel(file_path, engine='openpyxl', header=2)
+    except Exception as e:
+        logger.error(f"Erro ao ler {file_path} com engine padrão: {e}")
+        logger.info(f"Tentando ler {file_path} sem engine específico...")
+        try:
+            df = pd.read_excel(file_path, engine=None, header=2) # Pandas tentará inferir
+        except Exception as e_fallback:
+            logger.error(f"Erro também na segunda tentativa (engine=None): {e_fallback}")
+            # NOVA TENTATIVA: Ler dados brutos com openpyxl se o erro for de estilo
+            if "NamedCellStyle" in str(e_fallback) and ".name should be <class 'str'> but value is <class 'NoneType'>" in str(e_fallback):
+                logger.info(f"Erro de estilo detectado. Tentando leitura 'bruta' de dados com openpyxl para {file_path}")
+                try:
+                    workbook = load_workbook(filename=file_path, read_only=True, data_only=True)
+                    sheet = workbook.active # Pega a primeira aba ativa
+                    # Extrai dados linha por linha
+                    data_rows = []
+                    for row in sheet.iter_rows():
+                        data_rows.append([cell.value for cell in row])
+                    if data_rows:
+                        # Cria DataFrame a partir dos dados brutos (cabeçalho na primeira linha)
+                        df = pd.DataFrame(data_rows[1:], columns=data_rows[0])
+                        logger.info(f"Leitura 'bruta' bem-sucedida para {file_path}. {len(df)} registros.")
+                    else:
+                        logger.warning(f"Planilha {file_path} parece vazia na leitura 'bruta'.")
+                except Exception as e_raw:
+                    logger.error(f"Erro na tentativa de leitura 'bruta' com openpyxl para {file_path}: {e_raw}")
+            else:
+                logger.warning(f"Pulando arquivo {file_path} devido a erro não relacionado a estilo conhecido.")
+    if df is not None and not df.empty:
+        return df
+    return None
+
 def load_spreadsheets():
     """Carrega todas as planilhas Excel da pasta planilhas, aceitando nomes de colunas flexíveis e header na linha 3"""
     global df
     try:
         planilhas_dir = os.path.join(os.path.dirname(__file__), 'planilhas')
         logger.info(f"Procurando planilhas em: {planilhas_dir}")
-        
         if not os.path.exists(planilhas_dir):
             logger.error(f"Diretório de planilhas não encontrado: {planilhas_dir}")
             return False
-            
         excel_files = glob.glob(os.path.join(planilhas_dir, '*.xlsx'))
         logger.info(f"Arquivos Excel encontrados: {excel_files}")
-        
         if not excel_files:
             logger.error("Nenhum arquivo Excel encontrado")
             return False
-            
         all_data = []
         for file in excel_files:
-            try:
-                # Ler a planilha a partir da linha 3 (header=2)
-                temp_df = pd.read_excel(file, engine='openpyxl', header=2)
-                logger.info(f"Colunas encontradas em {os.path.basename(file)}: {temp_df.columns.tolist()}")
-                
+            file_name = os.path.basename(file)
+            temp_df = load_data_from_file(file, file_name)
+            if temp_df is not None:
                 # Normalizar nomes das colunas
                 col_map = {}
                 for col in temp_df.columns:
                     norm = normalize_column(col)
                     logger.info(f"Coluna original: '{col}' -> Normalizada: '{norm}'")
-                    
                     if 'num' in norm and 'peca' in norm:
                         col_map[col] = 'Numero da Peca'
                         logger.info(f"Mapeando '{col}' -> 'Numero da Peca'")
@@ -85,88 +116,30 @@ def load_spreadsheets():
                     elif 'localizacao' in norm:
                         col_map[col] = 'Localizacao'
                         logger.info(f"Mapeando '{col}' -> 'Localizacao'")
-                
-                # Renomear colunas
                 temp_df = temp_df.rename(columns=col_map)
                 logger.info(f"Colunas após mapeamento: {temp_df.columns.tolist()}")
-                
-                # Verificar se as colunas necessárias existem
                 required_columns = ['Numero da Peca', 'Descricao', 'Quantidade', 'Localizacao']
                 missing_columns = [col for col in required_columns if col not in temp_df.columns]
-                
                 if missing_columns:
                     logger.error(f"Colunas faltando em {file}: {missing_columns}")
                     logger.error(f"Colunas disponíveis: {temp_df.columns.tolist()}")
                     continue
-                
-                # Adicionar nome do arquivo como fonte
                 temp_df['Fonte'] = os.path.basename(file)
-                
-                # Limpar dados
                 for col in temp_df.columns:
                     if temp_df[col].dtype == 'object':
                         temp_df[col] = temp_df[col].astype(str).str.strip()
-                
                 all_data.append(temp_df)
                 logger.info(f"Carregado {file}: {len(temp_df)} registros")
-                
-            except Exception as e:
-                logger.error(f"Erro ao ler {file}: {str(e)}")
-                # Tentar ler sem engine específico
-                try:
-                    logger.info(f"Tentando ler {file} sem engine específico...")
-                    temp_df = pd.read_excel(file)
-                    logger.info(f"Sucesso! Colunas: {temp_df.columns.tolist()}")
-                    
-                    # Continuar com o processamento normal...
-                    col_map = {}
-                    for col in temp_df.columns:
-                        norm = normalize_column(col)
-                        if 'num' in norm and 'peca' in norm:
-                            col_map[col] = 'Numero da Peca'
-                        elif 'descricao' in norm:
-                            col_map[col] = 'Descricao'
-                        elif 'quantidade' in norm:
-                            col_map[col] = 'Quantidade'
-                        elif 'localizacao' in norm:
-                            col_map[col] = 'Localizacao'
-                    
-                    temp_df = temp_df.rename(columns=col_map)
-                    required_columns = ['Numero da Peca', 'Descricao', 'Quantidade', 'Localizacao']
-                    missing_columns = [col for col in required_columns if col not in temp_df.columns]
-                    
-                    if missing_columns:
-                        logger.error(f"Colunas faltando em {file}: {missing_columns}")
-                        continue
-                    
-                    temp_df['Fonte'] = os.path.basename(file)
-                    for col in temp_df.columns:
-                        if temp_df[col].dtype == 'object':
-                            temp_df[col] = temp_df[col].astype(str).str.strip()
-                    
-                    all_data.append(temp_df)
-                    logger.info(f"Carregado {file}: {len(temp_df)} registros")
-                    
-                except Exception as e2:
-                    logger.error(f"Erro também na segunda tentativa: {str(e2)}")
-                    continue
-        
         if not all_data:
             logger.error("Nenhum dado foi carregado das planilhas")
             return False
-            
-        # Combinar todos os DataFrames
         df = pd.concat(all_data, ignore_index=True)
         logger.info(f"Total de registros carregados: {len(df)}")
         logger.info(f"Colunas disponíveis: {df.columns.tolist()}")
-        
-        # Mostrar alguns exemplos de dados
         logger.info("\nExemplos de dados carregados:")
         for _, row in df.head().iterrows():
             logger.info(f"Peça: {row['Numero da Peca']}, Descrição: {row['Descricao']}")
-        
         return True
-        
     except Exception as e:
         logger.error(f"Erro ao carregar planilhas: {str(e)}")
         return False
