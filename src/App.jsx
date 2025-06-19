@@ -14,10 +14,7 @@ function App() {
   const [message, setMessage] = useState(null)
   const [stats, setStats] = useState(null)
 
-  // Sempre usar a URL interna do serviço Docker Swarm
-  const API_BASE_URL = window.location.hostname === 'localhost'
-    ? 'http://localhost:5000'
-    : 'https://api.guvito.site';
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
   const searchStock = async () => {
     if (!query.trim()) {
@@ -30,7 +27,7 @@ function App() {
     setMessage(null)
     
     try {
-      const response = await fetch(`${API_BASE_URL}/search`, {
+      const response = await fetch(`${backendUrl}/search`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -60,7 +57,7 @@ function App() {
 
   const loadStats = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/stats`);
+      const response = await fetch(`${backendUrl}/stats`);
       const data = await response.json();
       setStats(data);
     } catch (error) {
