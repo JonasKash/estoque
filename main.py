@@ -144,37 +144,39 @@ def load_spreadsheets():
         logger.error(f"Erro ao carregar planilhas: {str(e)}")
         return False
 
+def normalize_peca_num(num):
+    """Remove espaços e deixa maiúsculo para normalizar número de peça"""
+    if pd.isna(num):
+        return ''
+    return str(num).replace(' ', '').upper()
+
 def search_stock(query):
     """Busca no estoque pelo número da peça, descrição ou localização"""
     if df is None or df.empty:
         logger.error("DataFrame vazio ou não inicializado")
         return []
-    
     try:
-        query = str(query).strip().upper()
+        query = str(query).strip().upper().replace(' ', '')
         logger.info(f"Buscando por: {query}")
-        
-        # Buscar em todas as colunas relevantes
         results = []
-        
-        # Busca por número da peça
-        peca_matches = df[df['Numero da Peca'].str.contains(query, case=False, na=False)]
-        if not peca_matches.empty:
-            results.extend(peca_matches.to_dict('records'))
-            logger.info(f"Encontrados {len(peca_matches)} resultados por número da peça")
-        
+        # Busca por número da peça (normalizado)
+        if 'Numero da Peca' in df.columns:
+            if '_peca_normalizada' not in df.columns:
+                df['_peca_normalizada'] = df['Numero da Peca'].apply(normalize_peca_num)
+            peca_matches = df[df['_peca_normalizada'].str.contains(query, na=False)]
+            if not peca_matches.empty:
+                results.extend(peca_matches.to_dict('records'))
+                logger.info(f"Encontrados {len(peca_matches)} resultados por número da peça (normalizado)")
         # Busca por descrição
         desc_matches = df[df['Descricao'].str.contains(query, case=False, na=False)]
         if not desc_matches.empty:
             results.extend(desc_matches.to_dict('records'))
             logger.info(f"Encontrados {len(desc_matches)} resultados por descrição")
-        
         # Busca por localização
         loc_matches = df[df['Localizacao'].str.contains(query, case=False, na=False)]
         if not loc_matches.empty:
             results.extend(loc_matches.to_dict('records'))
             logger.info(f"Encontrados {len(loc_matches)} resultados por localização")
-        
         # Remover duplicatas
         seen = set()
         unique_results = []
@@ -183,10 +185,8 @@ def search_stock(query):
             if key not in seen:
                 seen.add(key)
                 unique_results.append(result)
-        
         logger.info(f"Total de resultados únicos: {len(unique_results)}")
         return unique_results[:20]  # Limitar a 20 resultados
-        
     except Exception as e:
         logger.error(f"Erro durante a busca: {str(e)}")
         return []
@@ -315,7 +315,7 @@ def schedule_reload():
         time.sleep(30)
 
 if __name__ == '__main__':
-    # Carregar dados ao iniciar
+    # Carregar dados ao iniciar2
     if load_spreadsheets():
         logger.info("Sistema iniciado com sucesso!")
         logger.info("Servidor rodando em: http://localhost:5000")
