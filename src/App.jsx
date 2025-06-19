@@ -15,7 +15,9 @@ function App() {
   const [stats, setStats] = useState(null)
 
   // Sempre usar a URL interna do serviço Docker Swarm
-  const API_BASE_URL = 'http://controle-estoque-api:5000';
+  const API_BASE_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : 'https://api.guvito.site';
 
   const searchStock = async () => {
     if (!query.trim()) {
