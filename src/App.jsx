@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import './App.css'
-import os
 
 function App() {
   const [query, setQuery] = useState('')
@@ -15,7 +14,7 @@ function App() {
   const [message, setMessage] = useState(null)
   const [stats, setStats] = useState(null)
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   const searchStock = async () => {
     if (!query.trim()) {
