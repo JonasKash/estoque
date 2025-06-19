@@ -10,6 +10,7 @@ import threading
 import schedule
 import time
 from openpyxl import load_workbook  # Importar openpyxl para leitura bruta
+import re
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -125,6 +126,7 @@ def load_spreadsheets():
                     logger.error(f"Colunas disponíveis: {temp_df.columns.tolist()}")
                     continue
                 temp_df['Fonte'] = os.path.basename(file)
+                temp_df['FonteData'] = extrair_data_planilha(os.path.basename(file))
                 for col in temp_df.columns:
                     if temp_df[col].dtype == 'object':
                         temp_df[col] = temp_df[col].astype(str).str.strip()
@@ -177,15 +179,24 @@ def search_stock(query):
         if not loc_matches.empty:
             results.extend(loc_matches.to_dict('records'))
             logger.info(f"Encontrados {len(loc_matches)} resultados por localização")
-        # Remover duplicatas
-        seen = set()
-        unique_results = []
+        # Remover duplicatas mantendo o mais recente (maior data)
+        seen = {}
         for result in results:
             key = (result['Numero da Peca'], result['Descricao'], result['Localizacao'])
-            if key not in seen:
-                seen.add(key)
-                unique_results.append(result)
-        logger.info(f"Total de resultados únicos: {len(unique_results)}")
+            # Extrair data para ordenação (formato dd/mm/yyyy)
+            fonte_data = result.get('FonteData', '')
+            try:
+                data_tuple = tuple(map(int, fonte_data.split('/')[::-1]))  # (yyyy, mm, dd)
+            except:
+                data_tuple = (0, 0, 0)
+            if key not in seen or data_tuple > seen[key][0]:
+                seen[key] = (data_tuple, result)
+        # Ordenar por data decrescente e pegar só o mais recente de cada key
+        unique_results = [v[1] for v in seen.values()]
+        # Substituir campo Fonte pelo FonteData para exibir só a data
+        for r in unique_results:
+            r['Fonte'] = r.get('FonteData', r.get('Fonte', ''))
+        logger.info(f"Total de resultados únicos (mais recentes): {len(unique_results)}")
         return unique_results[:20]  # Limitar a 20 resultados
     except Exception as e:
         logger.error(f"Erro durante a busca: {str(e)}")
@@ -313,6 +324,17 @@ def schedule_reload():
     while True:
         schedule.run_pending()
         time.sleep(30)
+
+def extrair_data_planilha(nome_arquivo):
+    # Procura por 6 dígitos seguidos no nome do arquivo
+    match = re.search(r'(\d{6})', nome_arquivo)
+    if match:
+        data_str = match.group(1)
+        dia = data_str[:2]
+        mes = data_str[2:4]
+        ano = '20' + data_str[4:]  # Assume sempre 20xx
+        return f"{dia}/{mes}/{ano}"
+    return nome_arquivo  # fallback
 
 if __name__ == '__main__':
     # Carregar dados ao iniciar2
