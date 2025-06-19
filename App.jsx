@@ -13,9 +13,9 @@ function App() {
   const [stats, setStats] = useState(null)
 
   // Detectar se estamos em produção ou desenvolvimento
-  const API_BASE_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:5000' 
-    : window.location.origin
+  const API_BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:5000'
+  : 'https://api.guvito.site';
 
   const searchStock = async () => {
     if (!query.trim()) return
