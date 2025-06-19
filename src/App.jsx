@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import './App.css'
+import os
 
 function App() {
   const [query, setQuery] = useState('')
