@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button.jsx'
 import { Input } from '@/components/ui/input.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
+import ChatWidget from '@/components/ChatWidget.jsx'
 import './App.css'
 
 function App() {
@@ -223,6 +224,9 @@ function App() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Chat Widget */}
+        <ChatWidget />
       </div>
     </div>
   )
