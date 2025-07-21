@@ -1,195 +1,88 @@
-# Sistema de Consulta de Estoque
+# Estoque Guvito - Sistema de Consulta e Análise de Planilhas
 
-Sistema web para consulta de estoque baseado em planilhas Excel, com interface React e backend Python/Flask. **Agora com assistente de IA para análise inteligente das planilhas!**
-
-## 🚀 Como Executar
-
-### 1. Instalar Dependências
-
-**Backend (Python):**
-```bash
-pip install -r requirements.txt
-```
-
-**Frontend (Node.js):**
-```bash
-npm install
-```
-
-### 2. Executar o Sistema
-
-**Terminal 1 - Backend:**
-```bash
-python main.py
-```
-O servidor Flask será iniciado em `http://localhost:5000`
-
-**Terminal 2 - Frontend:**
-```bash
-npm run dev
-```
-O servidor de desenvolvimento será iniciado em `http://localhost:5173`
-
-### 3. Testar o Sistema
-
-**Teste da API:**
-```bash
-python test_api.py
-```
-
-**Teste do Chat e Análise:**
-```bash
-python test_chat.py
-```
-
-**Acesse no navegador:**
-- Frontend: http://localhost:5173
-- API: http://localhost:5000
-
-## 🤖 Assistente de IA - Chat Inteligente
-
-O sistema agora inclui um **assistente de IA** que pode analisar as planilhas de estoque e responder perguntas inteligentes:
-
-### 📍 Como Usar o Chat
-1. Clique no balão de chat no canto inferior direito da tela
-2. Digite suas perguntas em linguagem natural
-3. O assistente analisará as planilhas e responderá com insights
-
-### 🔍 Tipos de Análise Disponíveis
-
-#### 📊 Análise de Mudanças
-- **Pergunta:** "Mostre as mudanças no estoque"
-- **O que faz:** Compara planilhas de diferentes datas
-- **Retorna:** Novos itens, itens removidos, mudanças de quantidade
-
-#### 📋 Histórico de Peças
-- **Pergunta:** "Histórico da peça A 0001808909"
-- **O que faz:** Analisa o histórico completo de uma peça específica
-- **Retorna:** Evolução de quantidade, mudanças de localização, estatísticas
-
-#### 📍 Mudanças de Localização
-- **Pergunta:** "Análise de localizações"
-- **O que faz:** Identifica peças que mudaram de localização
-- **Retorna:** Peças que se moveram, trajetória de mudanças
-
-#### 📈 Insights Gerais
-- **Pergunta:** "Insights gerais do estoque"
-- **O que faz:** Análise estatística completa do estoque
-- **Retorna:** Totais, médias, itens críticos, top localizações
-
-### 💡 Exemplos de Perguntas
-- "Qual foi a mudança no estoque entre as últimas planilhas?"
-- "Histórico da peça A 0001808909"
-- "Mostre mudanças de localização"
-- "Dê um resumo do estoque"
-- "Quais peças foram adicionadas recentemente?"
-- "Análise de diferenças entre planilhas"
-
-## 📁 Estrutura do Projeto
-
-```
-App/
-├── main.py              # Backend Flask com análise inteligente
-├── test_api.py          # Script de teste da API
-├── test_chat.py         # Script de teste do chat
-├── requirements.txt     # Dependências Python
-├── package.json         # Dependências Node.js
-├── planilhas/          # Planilhas Excel do estoque
-├── src/
-│   ├── App.jsx         # Componente principal React
-│   ├── components/
-│   │   ├── ChatWidget.jsx  # Componente do chat inteligente
-│   │   └── ui/         # Componentes UI
-│   └── main.jsx        # Ponto de entrada
-└── README.md           # Este arquivo
-```
-
-## 🔧 Endpoints da API
-
-### Endpoints Básicos
-- `GET /` - Informações da API
-- `GET /health` - Status do sistema
-- `GET /stats` - Estatísticas do estoque
-- `POST /search` - Busca no estoque
-
-### Endpoints de Análise Inteligente
-- `POST /chat/analyze` - Análise inteligente via chat
-- `GET /analyze/changes` - Análise de mudanças no estoque
-- `GET /analyze/peca/<numero>` - Histórico de uma peça específica
-- `GET /analyze/locations` - Análise de mudanças de localização
-- `GET /analyze/insights` - Insights gerais do estoque
-
-## 📊 Funcionalidades
-
-### ✅ Funcionalidades Básicas
-- Carregamento automático de planilhas Excel
-- Busca por número da peça, descrição ou localização
-- Estatísticas em tempo real
-- Interface moderna e responsiva
-- Tratamento de erros robusto
-
-### 🤖 Funcionalidades de IA
-- **Análise temporal:** Compara planilhas de diferentes datas
-- **Identificação de mudanças:** Detecta novos itens, remoções e alterações
-- **Histórico de peças:** Rastreia a evolução de itens específicos
-- **Análise de localização:** Identifica movimentações no estoque
-- **Insights inteligentes:** Estatísticas avançadas e tendências
-- **Chat natural:** Interface conversacional para consultas
-
-## 🧠 Como Funciona a Análise
-
-### 📅 Análise Temporal
-O sistema compara planilhas cronologicamente para identificar:
-- **Novos itens:** Peças que aparecem em planilhas mais recentes
-- **Itens removidos:** Peças que desapareceram
-- **Mudanças de quantidade:** Variações no estoque
-- **Mudanças de localização:** Movimentações físicas
-
-### 🔍 Processamento Inteligente
-1. **Normalização:** Padroniza nomes de colunas e valores
-2. **Comparação:** Analisa diferenças entre datas consecutivas
-3. **Agregação:** Calcula estatísticas e tendências
-4. **Interpretação:** Gera insights em linguagem natural
-
-## 🐛 Solução de Problemas
-
-### Erro "Failed to fetch"
-- Certifique-se de que o backend está rodando (`python main.py`)
-- Verifique se a porta 5000 está livre
-- Execute `python test_api.py` para diagnosticar
-
-### Erro ao carregar planilhas
-- Verifique se as planilhas estão na pasta `planilhas/`
-- Certifique-se de que os arquivos são .xlsx
-- Verifique se as planilhas têm as colunas necessárias
-
-### Chat não responde
-- Execute `python test_chat.py` para verificar as funcionalidades
-- Verifique se o backend está carregando as planilhas corretamente
-- Confirme se as planilhas têm dados suficientes para análise
-
-### Performance lenta
-- O sistema processa todas as planilhas na memória
-- Para grandes volumes, considere otimizar as planilhas
-- O chat pode demorar alguns segundos para análises complexas
-
-## 🔮 Próximas Funcionalidades
-
-- [ ] Análise preditiva de estoque
-- [ ] Alertas automáticos para estoque baixo
-- [ ] Relatórios em PDF
-- [ ] Integração com sistemas externos
-- [ ] Análise de tendências sazonais
-- [ ] Dashboard interativo com gráficos
-
-## 📞 Suporte
-
-Para dúvidas ou problemas:
-1. Verifique os logs do backend
-2. Execute os scripts de teste
-3. Consulte a documentação da API
-4. Teste com planilhas menores primeiro
+Sistema web para consulta e análise de estoque a partir de planilhas Excel, com interface moderna em React, backend Python/Flask, deploy via Docker, Nginx e Traefik.
 
 ---
 
-**Desenvolvido com ❤️ para análise inteligente de estoque** 
+## 🚀 Como Funciona
+- **Frontend:** React, build estático servido por Nginx
+- **Backend:** Flask, leitura dinâmica das planilhas a cada busca
+- **Proxy/API:** Nginx faz proxy do frontend para o backend em `/api`
+- **Orquestração:** Docker Compose
+- **Roteamento:** Traefik gerencia domínios e HTTPS
+
+---
+
+## 📦 Estrutura do Projeto
+```
+App/
+├── Dockerfile.backend         # Backend Flask
+├── Dockerfile.frontend        # Frontend React + Nginx
+├── docker-compose.yml         # Orquestra tudo
+├── nginx.conf                 # Configuração do Nginx
+├── DEPLOY.md                  # Guia de deploy detalhado
+├── planilhas/                 # Suas planilhas .xlsx
+├── src/                       # Código React
+├── main.py                    # Backend Flask
+├── requirements.txt           # Dependências Python
+├── package.json               # Dependências Node.js
+└── ...
+```
+
+---
+
+## 🌐 Variáveis de Ambiente
+- **Frontend:** Usa `VITE_BACKEND_URL` (em produção já configurado para `/api` via docker-compose)
+- **Backend:** Porta 5000
+
+---
+
+## 🛠️ Build e Deploy (Resumo)
+1. **Clone o projeto e entre na pasta App:**
+   ```sh
+   git clone <repo> estoque-guvito
+   cd estoque-guvito/App
+   ```
+2. **Coloque suas planilhas .xlsx na pasta `planilhas/`**
+3. **Suba os containers:**
+   ```sh
+   sudo docker-compose up -d --build
+   ```
+4. **Configure o DNS:**
+   - `www.estoque.guvito.site` → IP do servidor
+   - (Opcional) `api.estoque.guvito.site` → IP do servidor
+5. **Acesse:**
+   - Frontend: http://www.estoque.guvito.site
+   - API: http://api.estoque.guvito.site
+   - Traefik dashboard: http://<seu-ip-ou-dominio>:8080
+
+---
+
+## 🔄 Atualizar código
+```sh
+git pull
+sudo docker-compose up -d --build
+```
+
+---
+
+## 🐞 Troubleshooting
+- **Planilhas não aparecem:**
+  - Confirme que estão em `App/planilhas/` e são `.xlsx`
+  - Veja logs do backend: `docker logs estoque-backend`
+- **Erro 404:**
+  - Acesse sempre pelo domínio configurado
+  - Verifique se containers estão rodando: `docker ps`
+- **Backend não responde:**
+  - Veja se a porta 5000 está exposta no container backend
+- **Frontend não mostra dados:**
+  - Veja se o build do React está ok e o Nginx está servindo `/api` corretamente
+
+---
+
+## 📄 Documentação de Deploy
+Veja o arquivo [DEPLOY.md](./DEPLOY.md) para instruções detalhadas de deploy, DNS, atualização e troubleshooting.
+
+---
+
+**Dúvidas? Só perguntar!** 

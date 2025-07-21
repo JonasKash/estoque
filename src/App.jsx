@@ -1,54 +1,36 @@
 import { useState, useEffect } from 'react'
-import { Search, Package, MapPin, Hash, BarChart3, Loader2, FileText } from 'lucide-react'
+import { Search, Package, MapPin, Hash, BarChart3, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button.jsx'
 import { Input } from '@/components/ui/input.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
+import ChatWidget from '@/components/ChatWidget.jsx'
 import './App.css'
 
 function App() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [message, setMessage] = useState(null)
   const [stats, setStats] = useState(null)
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  // Usar variável de ambiente para backend, padrão /api
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || '/api';
 
   const searchStock = async () => {
-    if (!query.trim()) {
-      setMessage('Por favor, digite um termo para buscar')
-      return
-    }
-
+    if (!query.trim()) return
     setLoading(true)
-    setError(null)
-    setMessage(null)
-    
     try {
-      const response = await fetch(`${backendUrl}/search`, {
+      const response = await fetch(`${API_BASE_URL}/search`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ query }),
       })
-
       const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Erro ao realizar a busca')
-      }
-
-      setResults(data.results)
-      if (data.total === 0) {
-        setMessage('Não foi encontrado essa peça nas planilhas.')
-      } else {
-        setMessage(data.message)
-      }
-    } catch (err) {
-      setError(err.message)
+      setResults(data.results || [])
+    } catch (error) {
+      console.error('Erro na busca:', error)
       setResults([])
     } finally {
       setLoading(false)
@@ -57,24 +39,23 @@ function App() {
 
   const loadStats = async () => {
     try {
-      const response = await fetch(`${backendUrl}/stats`);
-      const data = await response.json();
-      setStats(data);
+      const response = await fetch(`${API_BASE_URL}/stats`)
+      const data = await response.json()
+      setStats(data)
     } catch (error) {
-      console.error('Erro ao carregar estatísticas:', error);
+      console.error('Erro ao carregar estatísticas:', error)
     }
-  };
+  }
 
-  // Carregar estatísticas ao inicializar
   useEffect(() => {
-    loadStats();
-  }, []);
+    loadStats()
+  }, [])
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
-      searchStock();
+      searchStock()
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -155,19 +136,6 @@ function App() {
           </CardContent>
         </Card>
 
-        {/* Mensagens de feedback */}
-        {message && (
-          <div className="text-center text-gray-600">
-            {message}
-          </div>
-        )}
-        
-        {error && (
-          <div className="text-center text-red-600">
-            {error}
-          </div>
-        )}
-
         {/* Results Section */}
         {results.length > 0 && (
           <Card>
@@ -203,10 +171,6 @@ function App() {
                           <div className="flex items-center gap-1">
                             <MapPin className="h-4 w-4" />
                             <span>Local: {item.Localizacao}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <FileText className="h-4 w-4" />
-                            <span>Fonte: {item.Fonte}</span>
                           </div>
                         </div>
                       </div>
@@ -245,7 +209,7 @@ function App() {
                 </ul>
               </div>
               <div className="space-y-2">
-                <h4 className="font-semibold">Por Localização:</h4> 
+                <h4 className="font-semibold">Por Localização:</h4>
                 <ul className="text-sm text-gray-600 space-y-1">
                   <li>• "estrado 5"</li>
                   <li>• "lubri"</li>
@@ -255,6 +219,9 @@ function App() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Chat Widget */}
+        <ChatWidget />
       </div>
     </div>
   )
