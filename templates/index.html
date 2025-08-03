@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Consulta de Estoque</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .logo {
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .logo p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .system-status {
+            margin-bottom: 30px;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 0.9em;
+            display: none;
+        }
+
+        .system-status.loading {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            display: block;
+        }
+
+        .system-status.ready {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            display: block;
+        }
+
+        .system-status.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            display: block;
+        }
+
+        .search-box {
+            margin-bottom: 30px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 50px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .search-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .search-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .search-button:active {
+            transform: translateY(0);
+        }
+
+        .search-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 15px;
+            background: #f8f9fa;
+            border-left: 5px solid #667eea;
+            text-align: left;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-item {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #333;
+            min-width: 120px;
+            margin-right: 15px;
+        }
+
+        .result-value {
+            color: #666;
+            flex: 1;
+        }
+
+        .error {
+            background: #fee;
+            border-left-color: #e74c3c;
+            color: #c0392b;
+        }
+
+        .success {
+            background: #f0f8f0;
+            border-left-color: #27ae60;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .timeout-warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+            color: #856404;
+        }
+
+        .footer {
+            margin-top: 30px;
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background-color: #e1e5e9;
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            .logo h1 {
+                font-size: 2em;
+            }
+            
+            .result-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .result-label {
+                min-width: auto;
+                margin-bottom: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>🔍 Consulta de Estoque</h1>
+            <p>Digite o código da peça para buscar informações</p>
+        </div>
+
+        <div id="systemStatus" class="system-status">
+            <span class="spinner" id="statusSpinner"></span>
+            <span id="statusText">Carregando sistema...</span>
+        </div>
+
+        <div class="search-box">
+            <form id="searchForm">
+                <input 
+                    type="text" 
+                    id="codigoInput" 
+                    class="search-input" 
+                    placeholder="Digite o código da peça..."
+                    autocomplete="off"
+                    required
+                    disabled
+                >
+                <button type="submit" class="search-button" id="searchButton" disabled>
+                    🔍 Buscar
+                </button>
+                <div class="progress-bar" id="progressBar" style="display: none;">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </form>
+        </div>
+
+        <div id="result" class="result">
+            <div class="result-item">
+                <span class="result-label">📍 Localização:</span>
+                <span class="result-value" id="localizacao">-</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">📦 Quantidade:</span>
+                <span class="result-value" id="quantidade">-</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">🔧 Nome da Peça:</span>
+                <span class="result-value" id="nome">-</span>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Sistema de Consulta de Estoque - Desenvolvido por Jonas</p>
+        </div>
+    </div>
+
+    <script>
+        let searchTimeout;
+        let progressInterval;
+        const TIMEOUT_DURATION = 5000; // 5 segundos (agora muito mais rápido!)
+
+        // Verificar status do sistema na inicialização
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const status = await response.json();
+                
+                const statusDiv = document.getElementById('systemStatus');
+                const statusText = document.getElementById('statusText');
+                const statusSpinner = document.getElementById('statusSpinner');
+                const codigoInput = document.getElementById('codigoInput');
+                const searchButton = document.getElementById('searchButton');
+                
+                if (status.dados_carregados) {
+                    statusDiv.className = 'system-status ready';
+                    statusText.innerHTML = `✅ Sistema pronto! ${status.indice_codigos} códigos carregados`;
+                    
+                    // Remover o spinner quando o sistema estiver pronto
+                    if (statusSpinner) {
+                        statusSpinner.style.display = 'none';
+                    }
+                    
+                    // Habilitar busca
+                    codigoInput.disabled = false;
+                    searchButton.disabled = false;
+                    codigoInput.focus();
+                } else {
+                    statusDiv.className = 'system-status loading';
+                    statusText.innerHTML = '🔄 Carregando dados do sistema...';
+                    
+                    // Mostrar spinner durante carregamento
+                    if (statusSpinner) {
+                        statusSpinner.style.display = 'inline-block';
+                    }
+                    
+                    // Verificar novamente em 2 segundos
+                    setTimeout(checkSystemStatus, 2000);
+                }
+            } catch (error) {
+                console.error('Erro ao verificar status:', error);
+                const statusDiv = document.getElementById('systemStatus');
+                const statusText = document.getElementById('statusText');
+                const statusSpinner = document.getElementById('statusSpinner');
+                
+                statusDiv.className = 'system-status error';
+                statusText.innerHTML = '❌ Erro ao conectar com o servidor';
+                
+                // Remover spinner em caso de erro
+                if (statusSpinner) {
+                    statusSpinner.style.display = 'none';
+                }
+            }
+        }
+
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const codigo = document.getElementById('codigoInput').value.trim();
+            const resultDiv = document.getElementById('result');
+            const searchButton = document.getElementById('searchButton');
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            
+            if (!codigo) {
+                showError('Por favor, digite um código para buscar');
+                return;
+            }
+            
+            // Limpar timeouts anteriores
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+            if (progressInterval) {
+                clearInterval(progressInterval);
+            }
+            
+            // Mostrar loading
+            searchButton.innerHTML = '<span class="spinner"></span>Buscando...';
+            searchButton.disabled = true;
+            resultDiv.style.display = 'none';
+            progressBar.style.display = 'block';
+            
+            // Iniciar barra de progresso
+            let progress = 0;
+            progressInterval = setInterval(() => {
+                progress += 2;
+                progressFill.style.width = progress + '%';
+                
+                if (progress >= 100) {
+                    clearInterval(progressInterval);
+                }
+            }, TIMEOUT_DURATION / 50);
+            
+            console.log('Fazendo busca para:', codigo);
+            
+            // Configurar timeout
+            searchTimeout = setTimeout(() => {
+                clearInterval(progressInterval);
+                showError('Peça não encontrada - Busca demorou mais de 5 segundos');
+                resetSearchButton();
+                hideProgressBar();
+            }, TIMEOUT_DURATION);
+            
+            // Fazer requisição AJAX
+            fetch('/buscar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'codigo=' + encodeURIComponent(codigo)
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                
+                // Limpar timeout e progresso
+                clearTimeout(searchTimeout);
+                clearInterval(progressInterval);
+                hideProgressBar();
+                
+                if (data.erro) {
+                    showError(data.erro);
+                } else {
+                    showResult(data);
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                
+                // Limpar timeout e progresso
+                clearTimeout(searchTimeout);
+                clearInterval(progressInterval);
+                hideProgressBar();
+                
+                showError('Erro ao conectar com o servidor. Tente novamente.');
+            })
+            .finally(() => {
+                resetSearchButton();
+                
+                // Garantir que o campo de busca esteja sempre habilitado após qualquer operação
+                const codigoInput = document.getElementById('codigoInput');
+                if (codigoInput) {
+                    codigoInput.disabled = false;
+                }
+            });
+        });
+
+        function showResult(data) {
+            console.log('Mostrando resultado:', data);
+            const resultDiv = document.getElementById('result');
+            console.log('Result div encontrado:', resultDiv);
+            
+            // Verificar se os elementos existem antes de tentar acessá-los
+            const localizacaoEl = document.getElementById('localizacao');
+            const quantidadeEl = document.getElementById('quantidade');
+            const nomeEl = document.getElementById('nome');
+            const ultimaAlteracaoEl = document.getElementById('ultimaAlteracao');
+            
+            console.log('Elementos encontrados:', {
+                localizacao: localizacaoEl,
+                quantidade: quantidadeEl,
+                nome: nomeEl,
+                ultimaAlteracao: ultimaAlteracaoEl
+            });
+            
+            if (localizacaoEl) {
+                localizacaoEl.textContent = data.localizacao || 'N/A';
+                console.log('Localização definida:', data.localizacao);
+            }
+            if (quantidadeEl) {
+                quantidadeEl.textContent = data.quantidade || 'N/A';
+                console.log('Quantidade definida:', data.quantidade);
+            }
+            if (nomeEl) {
+                nomeEl.textContent = data.nome || 'N/A';
+                console.log('Nome definido:', data.nome);
+            }
+            if (ultimaAlteracaoEl) {
+                // Esconder a linha de última alteração
+                ultimaAlteracaoEl.parentElement.style.display = 'none';
+                console.log('Linha de última alteração ocultada');
+            }
+            
+            console.log('Aplicando classe show ao result div');
+            resultDiv.className = 'result show success';
+            resultDiv.style.display = 'block'; // Forçar exibição
+            console.log('Classe aplicada. Display atual:', resultDiv.style.display);
+        }
+
+        function showError(message) {
+            console.log('Mostrando erro:', message);
+            const resultDiv = document.getElementById('result');
+            
+            // Verificar se é um timeout
+            const isTimeout = message.includes('5 segundos') || message.includes('Timeout') || message.includes('demorou mais');
+            
+            // Verificar se é "não encontrada" para fazer reset automático
+            const isNotFound = message.includes('não encontrada') || message.includes('não encontrado');
+            
+            resultDiv.innerHTML = `
+                <div class="loading">
+                    <span class="spinner"></span>
+                    ${message}
+                </div>
+            `;
+            
+            if (isTimeout) {
+                resultDiv.className = 'result show timeout-warning';
+            } else {
+                resultDiv.className = 'result show error';
+            }
+            
+            // Forçar exibição
+            resultDiv.style.display = 'block';
+            
+            // IMPORTANTE: Resetar o botão quando mostrar erro
+            resetSearchButton();
+            
+            // Se for "não encontrada", fazer reset automático da página após 0.5 segundos
+            if (isNotFound) {
+                console.log('Peça não encontrada - Fazendo reset automático da página em 0.5 segundos...');
+                setTimeout(() => {
+                    console.log('Executando reset da página...');
+                    window.location.reload();
+                }, 500);
+            }
+        }
+
+        function resetSearchButton() {
+            const searchButton = document.getElementById('searchButton');
+            const codigoInput = document.getElementById('codigoInput');
+            
+            // Resetar botão
+            searchButton.innerHTML = '🔍 Buscar';
+            searchButton.disabled = false;
+            
+            // Garantir que o campo de busca esteja habilitado
+            if (codigoInput) {
+                codigoInput.disabled = false;
+            }
+        }
+
+        function hideProgressBar() {
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            progressBar.style.display = 'none';
+            progressFill.style.width = '0%';
+        }
+
+        // Focar no campo de busca ao carregar a página
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Página carregada');
+            
+            // Verificar status do sistema
+            checkSystemStatus();
+            
+            const codigoInput = document.getElementById('codigoInput');
+            if (codigoInput) {
+                codigoInput.focus();
+            }
+        });
+
+        // Permitir busca com Enter
+        document.addEventListener('DOMContentLoaded', function() {
+            const codigoInput = document.getElementById('codigoInput');
+            if (codigoInput) {
+                codigoInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        document.getElementById('searchForm').dispatchEvent(new Event('submit'));
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html> 

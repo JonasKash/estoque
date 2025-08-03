@@ -1,88 +1,156 @@
-# Estoque Guvito - Sistema de Consulta e Análise de Planilhas
+# 🔍 Sistema de Consulta de Estoque
 
-Sistema web para consulta e análise de estoque a partir de planilhas Excel, com interface moderna em React, backend Python/Flask, deploy via Docker, Nginx e Traefik.
+Sistema web otimizado para consulta rápida de peças em estoque através de códigos.
 
----
+## ⚡ Características
 
-## 🚀 Como Funciona
-- **Frontend:** React, build estático servido por Nginx
-- **Backend:** Flask, leitura dinâmica das planilhas a cada busca
-- **Proxy/API:** Nginx faz proxy do frontend para o backend em `/api`
-- **Orquestração:** Docker Compose
-- **Roteamento:** Traefik gerencia domínios e HTTPS
+- **Busca Instantânea**: Índice otimizado para respostas em menos de 1 segundo
+- **Normalização de Códigos**: Encontra códigos com ou sem espaços
+- **Cache Inteligente**: Carregamento otimizado na inicialização
+- **Interface Moderna**: Design responsivo e amigável
+- **Auto-recuperação**: Reset automático em caso de erro
 
----
+## 🚀 Performance
 
-## 📦 Estrutura do Projeto
+- **Inicialização**: 2-3 segundos
+- **Busca**: Instantânea (< 1 segundo)
+- **Cache**: Persistente em arquivo
+- **Índice**: 2200+ códigos únicos
+
+## 📊 Funcionalidades
+
+### Busca Flexível
+- ✅ `A0075422318` - Busca exata
+- ✅ `A 0075422318` - Com espaços
+- ✅ `a0075422318` - Minúsculo
+- ✅ `a 0075422318` - Minúsculo com espaços
+
+### Informações Exibidas
+- 📍 **Localização** da peça
+- 📦 **Quantidade** em estoque
+- 🔧 **Nome/Descrição** da peça
+- 📅 **Última alteração** (se disponível)
+
+## 🛠️ Instalação Local
+
+### Pré-requisitos
+- Python 3.8+
+- pip
+
+### Passos
+
+1. **Clonar/Download do projeto**
+```bash
+cd /caminho/do/projeto
+```
+
+2. **Instalar dependências**
+```bash
+pip install -r requirements.txt
+```
+
+3. **Preparar planilhas**
+```bash
+# Copiar planilhas .xlsx para a pasta planilhas/
+```
+
+4. **Executar sistema**
+```bash
+python app.py
+```
+
+5. **Acessar**
+```
+http://localhost:5000
+```
+
+## 🌐 Instalação VPS
+
+Consulte o [Manual de Instalação VPS](MANUAL_INSTALACAO_VPS.md) para instruções completas.
+
+## 📁 Estrutura do Projeto
+
 ```
 App/
-├── Dockerfile.backend         # Backend Flask
-├── Dockerfile.frontend        # Frontend React + Nginx
-├── docker-compose.yml         # Orquestra tudo
-├── nginx.conf                 # Configuração do Nginx
-├── DEPLOY.md                  # Guia de deploy detalhado
-├── planilhas/                 # Suas planilhas .xlsx
-├── src/                       # Código React
-├── main.py                    # Backend Flask
-├── requirements.txt           # Dependências Python
-├── package.json               # Dependências Node.js
-└── ...
+├── app.py                 # Aplicação principal
+├── requirements.txt       # Dependências Python
+├── templates/
+│   └── index.html        # Interface web
+├── planilhas/            # Planilhas Excel
+│   ├── ESTOQUE300525.xlsx
+│   └── ...
+├── MANUAL_INSTALACAO_VPS.md
+└── README.md
 ```
 
----
+## 🔧 Configuração
 
-## 🌐 Variáveis de Ambiente
-- **Frontend:** Usa `VITE_BACKEND_URL` (em produção já configurado para `/api` via docker-compose)
-- **Backend:** Porta 5000
+### Planilhas Suportadas
+- Formato: `.xlsx`
+- Estrutura: Código, Nome, Quantidade, Localização
+- Cabeçalho: Linha 3 (padrão)
 
----
+### Cache
+- Arquivo: `cache_dados.pkl`
+- Duração: 1 hora
+- Recriação: Automática
 
-## 🛠️ Build e Deploy (Resumo)
-1. **Clone o projeto e entre na pasta App:**
-   ```sh
-   git clone <repo> estoque-guvito
-   cd estoque-guvito/App
-   ```
-2. **Coloque suas planilhas .xlsx na pasta `planilhas/`**
-3. **Suba os containers:**
-   ```sh
-   sudo docker-compose up -d --build
-   ```
-4. **Configure o DNS:**
-   - `www.estoque.guvito.site` → IP do servidor
-   - (Opcional) `api.estoque.guvito.site` → IP do servidor
-5. **Acesse:**
-   - Frontend: http://www.estoque.guvito.site
-   - API: http://api.estoque.guvito.site
-   - Traefik dashboard: http://<seu-ip-ou-dominio>:8080
+## 📝 Uso
 
----
+1. **Abrir o sistema** no navegador
+2. **Aguardar** carregamento (2-3 segundos)
+3. **Digitar código** da peça
+4. **Pressionar Enter** ou clicar em Buscar
+5. **Ver resultado** instantâneo
 
-## 🔄 Atualizar código
-```sh
-git pull
-sudo docker-compose up -d --build
+## 🛠️ Comandos Úteis
+
+### Verificar status
+```bash
+curl http://localhost:5000/api/status
 ```
 
+### Debug de código
+```bash
+curl http://localhost:5000/api/debug/CODIGO
+```
+
+### Listar planilhas
+```bash
+curl http://localhost:5000/api/planilhas
+```
+
+## 🔍 Solução de Problemas
+
+### Sistema não carrega
+- Verificar se planilhas estão na pasta `planilhas/`
+- Verificar permissões de arquivo
+- Verificar logs do console
+
+### Busca não funciona
+- Verificar formato das planilhas
+- Verificar se cache foi criado
+- Reiniciar aplicação
+
+### Erro de conexão
+- Verificar se porta 5000 está livre
+- Verificar firewall
+- Verificar logs de erro
+
+## 📞 Suporte
+
+- **Desenvolvedor**: Jonas
+- **Tecnologia**: Flask + Pandas + OpenPyXL
+- **Versão**: 1.0
+
+## 🎯 Melhorias Futuras
+
+- [ ] Busca por nome da peça
+- [ ] Histórico de buscas
+- [ ] Exportação de dados
+- [ ] Múltiplas planilhas simultâneas
+- [ ] API REST completa
+
 ---
 
-## 🐞 Troubleshooting
-- **Planilhas não aparecem:**
-  - Confirme que estão em `App/planilhas/` e são `.xlsx`
-  - Veja logs do backend: `docker logs estoque-backend`
-- **Erro 404:**
-  - Acesse sempre pelo domínio configurado
-  - Verifique se containers estão rodando: `docker ps`
-- **Backend não responde:**
-  - Veja se a porta 5000 está exposta no container backend
-- **Frontend não mostra dados:**
-  - Veja se o build do React está ok e o Nginx está servindo `/api` corretamente
-
----
-
-## 📄 Documentação de Deploy
-Veja o arquivo [DEPLOY.md](./DEPLOY.md) para instruções detalhadas de deploy, DNS, atualização e troubleshooting.
-
----
-
-**Dúvidas? Só perguntar!** 
+**⚡ Sistema otimizado para máxima performance e usabilidade!** 
