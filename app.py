@@ -230,39 +230,47 @@ def processar_planilhas_inicializacao():
     print("🚀 INICIANDO CARREGAMENTO DO SISTEMA...")
     print("📊 Processando planilhas de forma otimizada...")
     
-    # Lista de planilhas que funcionam (apenas as mais recentes)
-    planilhas_funcionais = [
-        "ESTOQUE300525.xlsx",  # Mais recente
-        "ESTOQUE 260625.xlsx", 
-        "ESTOQUE 240625.xlsx",
-        "ESTOQUE 230625.xlsx"
-    ]
+    # Verificar se a pasta de planilhas existe
+    if not PLANILHAS_DIR.exists():
+        print(f"❌ Pasta de planilhas não encontrada: {PLANILHAS_DIR}")
+        return {}
     
-    print(f"📁 Processando {len(planilhas_funcionais)} planilhas principais...")
+    # Listar todas as planilhas disponíveis
+    planilhas_disponiveis = list(PLANILHAS_DIR.glob("*.xlsx"))
+    
+    if not planilhas_disponiveis:
+        print(f"❌ Nenhuma planilha encontrada em: {PLANILHAS_DIR}")
+        return {}
+    
+    print(f"📁 Encontradas {len(planilhas_disponiveis)} planilhas...")
     
     dados_cache = {}
     total_itens = 0
     
-    for i, arquivo in enumerate(planilhas_funcionais, 1):
+    for i, arquivo in enumerate(planilhas_disponiveis, 1):
         try:
-            caminho_arquivo = os.path.join("planilhas", arquivo)
-            if not os.path.exists(caminho_arquivo):
-                print(f"❌ Arquivo não encontrado: {arquivo}")
-                continue
+            print(f"📊 Processando ({i}/{len(planilhas_disponiveis)}): {arquivo.name}")
             
             # Processar planilha de forma otimizada
-            dados_planilha = processar_planilha_otimizada(caminho_arquivo, arquivo)
+            dados_planilha = processar_planilha_otimizada(str(arquivo), arquivo.name)
             
             if dados_planilha:
-                dados_cache[arquivo] = dados_planilha
+                dados_cache[arquivo.name] = dados_planilha
                 total_itens += len(dados_planilha)
+                print(f"   ✅ {len(dados_planilha)} itens carregados")
+            else:
+                print(f"   ⚠️ Nenhum item válido encontrado")
             
         except Exception as e:
-            print(f"❌ Erro ao processar {arquivo}: {e}")
+            print(f"❌ Erro ao processar {arquivo.name}: {e}")
             continue
     
     print(f"📊 Total de planilhas processadas: {len(dados_cache)}")
     print(f"📦 Total de itens carregados: {total_itens}")
+    
+    if total_itens == 0:
+        print("❌ NENHUM ITEM CARREGADO! Verifique as planilhas.")
+        return {}
     
     # Atualizar cache
     cache_timestamp = time.time()
