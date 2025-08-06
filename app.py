@@ -25,33 +25,7 @@ indice_timestamp = 0
 # Flag para indicar se os dados foram carregados
 dados_carregados = False
 
-def extrair_data_do_nome_arquivo(nome_arquivo):
-    """Extrai a data do nome do arquivo da planilha"""
-    # Padrões para extrair data do nome do arquivo
-    padroes = [
-        r'(\d{2})(\d{2})(\d{2,4})',  # DDMMYY ou DDMMYYYY
-        r'(\d{2})-(\d{2})',  # DD-MM
-        r'(\d{2})(\d{2})(\d{2})',  # DDMMYY
-    ]
-    
-    nome_limpo = nome_arquivo.replace('ESTOQUE', '').replace('ARAXÁ', '').replace('ARAXA', '').replace('.xlsx', '').strip()
-    
-    for padrao in padroes:
-        match = re.search(padrao, nome_limpo)
-        if match:
-            if len(match.groups()) == 3:
-                dia, mes, ano = match.groups()
-                if len(ano) == 2:
-                    ano = '20' + ano
-                return datetime(int(ano), int(mes), int(dia))
-            elif len(match.groups()) == 2:
-                dia, mes = match.groups()
-                # Assumindo ano atual se não especificado
-                ano_atual = datetime.now().year
-                return datetime(ano_atual, int(mes), int(dia))
-    
-    # Se não conseguir extrair, usar data atual como fallback
-    return datetime.now()
+
 
 def safe_str(value):
     """Converte valor para string de forma segura"""
@@ -193,14 +167,15 @@ def processar_planilha_otimizada(caminho_arquivo, nome_arquivo):
         return []
 
 def criar_indice_codigos():
-    """Cria índice para busca rápida de códigos"""
+    """Cria índice para busca rápida de códigos da planilha estoque.xlsx"""
     global indice_codigos, indice_timestamp
     
     print("🔍 Criando índice de códigos...")
     indice_codigos = {}
     
-    for arquivo, dados_planilha in dados_cache.items():
-        data_arquivo = extrair_data_do_nome_arquivo(arquivo)
+    # Agora só temos uma planilha: estoque.xlsx
+    if "estoque.xlsx" in dados_cache:
+        dados_planilha = dados_cache["estoque.xlsx"]
         
         for item in dados_planilha:
             codigo = safe_str(item.get('codigo')).strip().upper()
@@ -216,60 +191,57 @@ def criar_indice_codigos():
                     'nome': item.get('nome', ''),
                     'quantidade': item.get('quantidade', ''),
                     'localizacao': item.get('localizacao', ''),
-                    'data_arquivo': data_arquivo,
-                    'arquivo_origem': arquivo
+                    'data_arquivo': datetime.now(),  # Data atual já que é uma única planilha
+                    'arquivo_origem': 'estoque.xlsx'
                 })
     
     indice_timestamp = time.time()
     print(f"✅ Índice criado com {len(indice_codigos)} códigos únicos")
 
 def processar_planilhas_inicializacao():
-    """Processa todas as planilhas na inicialização do sistema de forma otimizada"""
+    """Processa apenas a planilha estoque.xlsx na inicialização do sistema"""
     global dados_cache, cache_timestamp, dados_carregados
     
     print("🚀 INICIANDO CARREGAMENTO DO SISTEMA...")
-    print("📊 Processando planilhas de forma otimizada...")
+    print("📊 Processando planilha estoque.xlsx...")
     
     # Verificar se a pasta de planilhas existe
     if not PLANILHAS_DIR.exists():
         print(f"❌ Pasta de planilhas não encontrada: {PLANILHAS_DIR}")
         return {}
     
-    # Listar todas as planilhas disponíveis
-    planilhas_disponiveis = list(PLANILHAS_DIR.glob("*.xlsx"))
+    # Caminho específico para a planilha estoque.xlsx
+    arquivo_estoque = PLANILHAS_DIR / "estoque.xlsx"
     
-    if not planilhas_disponiveis:
-        print(f"❌ Nenhuma planilha encontrada em: {PLANILHAS_DIR}")
+    if not arquivo_estoque.exists():
+        print(f"❌ Planilha estoque.xlsx não encontrada em: {PLANILHAS_DIR}")
         return {}
     
-    print(f"📁 Encontradas {len(planilhas_disponiveis)} planilhas...")
+    print(f"📁 Processando planilha: estoque.xlsx")
     
     dados_cache = {}
     total_itens = 0
     
-    for i, arquivo in enumerate(planilhas_disponiveis, 1):
-        try:
-            print(f"📊 Processando ({i}/{len(planilhas_disponiveis)}): {arquivo.name}")
-            
-            # Processar planilha de forma otimizada
-            dados_planilha = processar_planilha_otimizada(str(arquivo), arquivo.name)
-            
-            if dados_planilha:
-                dados_cache[arquivo.name] = dados_planilha
-                total_itens += len(dados_planilha)
-                print(f"   ✅ {len(dados_planilha)} itens carregados")
-            else:
-                print(f"   ⚠️ Nenhum item válido encontrado")
-            
-        except Exception as e:
-            print(f"❌ Erro ao processar {arquivo.name}: {e}")
-            continue
+    try:
+        print(f"📊 Processando: estoque.xlsx")
+        
+        # Processar planilha de forma otimizada
+        dados_planilha = processar_planilha_otimizada(str(arquivo_estoque), "estoque.xlsx")
+        
+        if dados_planilha:
+            dados_cache["estoque.xlsx"] = dados_planilha
+            total_itens += len(dados_planilha)
+            print(f"   ✅ {len(dados_planilha)} itens carregados")
+        else:
+            print(f"   ⚠️ Nenhum item válido encontrado")
+        
+    except Exception as e:
+        print(f"❌ Erro ao processar estoque.xlsx: {e}")
     
-    print(f"📊 Total de planilhas processadas: {len(dados_cache)}")
-    print(f"📦 Total de itens carregados: {total_itens}")
+    print(f"📊 Total de itens carregados: {total_itens}")
     
     if total_itens == 0:
-        print("❌ NENHUM ITEM CARREGADO! Verifique as planilhas.")
+        print("❌ NENHUM ITEM CARREGADO! Verifique a planilha estoque.xlsx.")
         return {}
     
     # Atualizar cache
@@ -288,7 +260,7 @@ def processar_planilhas_inicializacao():
     return dados_cache
 
 def buscar_peca(codigo_busca, timeout=30):
-    """Busca uma peça específica usando índice otimizado"""
+    """Busca uma peça específica usando índice otimizado da planilha estoque.xlsx"""
     try:
         print(f"🔍 Buscando código: {codigo_busca}")
         
@@ -322,28 +294,17 @@ def buscar_peca(codigo_busca, timeout=30):
         if not pecas_encontradas:
             return {"erro": f"Peça com código {codigo_busca} não encontrada"}
         else:
-            # Ordenar por data (mais recente primeiro)
-            pecas_ordenadas = sorted(pecas_encontradas, 
-                                    key=lambda x: x['data_arquivo'], 
-                                    reverse=True)
-            
-            # Pegar a última ocorrência (mais recente)
-            ultima_peca = pecas_ordenadas[0]
-            
-            # Verificar se há mais de uma ocorrência para rastrear última modificação
-            if len(pecas_ordenadas) > 1:
-                ultima_modificacao = rastrear_ultima_modificacao(pecas_ordenadas)
-            else:
-                ultima_modificacao = ultima_peca['data_arquivo'].strftime('%d/%m/%Y')
+            # Como agora temos apenas uma planilha, pegamos a primeira ocorrência
+            peca = pecas_encontradas[0]
             
             # Preparar resultado
             resultado = {
-                'codigo': ultima_peca['codigo'],
-                'nome': ultima_peca['nome'],
-                'quantidade': ultima_peca['quantidade'],
-                'localizacao': ultima_peca['localizacao'],
-                'ultima_alteracao': ultima_modificacao,
-                'arquivo_origem': ultima_peca['arquivo_origem']
+                'codigo': peca['codigo'],
+                'nome': peca['nome'],
+                'quantidade': peca['quantidade'],
+                'localizacao': peca['localizacao'],
+                'ultima_alteracao': datetime.now().strftime('%d/%m/%Y'),  # Data atual
+                'arquivo_origem': 'estoque.xlsx'
             }
             
             return resultado
@@ -355,41 +316,7 @@ def buscar_peca(codigo_busca, timeout=30):
         traceback.print_exc()
         return {"erro": error_msg}
 
-def rastrear_ultima_modificacao(pecas_encontradas):
-    """Rastreia a última modificação real da peça comparando todas as ocorrências"""
-    try:
-        if len(pecas_encontradas) == 1:
-            # Se só aparece em uma planilha, é a primeira vez
-            data = pecas_encontradas[0]['data_arquivo']
-            if data:
-                return data.strftime('%d/%m/%Y')
-            else:
-                return datetime.now().strftime('%d/%m/%Y')
-        
-        # Ordenar por data (mais antiga primeiro)
-        pecas_ordenadas = sorted(pecas_encontradas, key=lambda x: x['data_arquivo'] if x['data_arquivo'] else datetime.min)
-        
-        # Comparar cada versão com a anterior para detectar mudanças
-        ultima_modificacao = pecas_ordenadas[0]['data_arquivo'] or datetime.now()  # Data da primeira aparição
-        
-        for i in range(1, len(pecas_ordenadas)):
-            peca_atual = pecas_ordenadas[i]
-            peca_anterior = pecas_ordenadas[i-1]
-            
-            # Verificar se houve mudança em qualquer campo
-            mudanca_detectada = (
-                peca_atual['quantidade'] != peca_anterior['quantidade'] or
-                peca_atual['localizacao'] != peca_anterior['localizacao'] or
-                peca_atual['nome'] != peca_anterior['nome']
-            )
-            
-            if mudanca_detectada:
-                ultima_modificacao = peca_atual['data_arquivo'] or datetime.now()
-        
-        return ultima_modificacao.strftime('%d/%m/%Y')
-    except Exception as e:
-        print(f"Erro ao rastrear última modificação: {e}")
-        return datetime.now().strftime('%d/%m/%Y')
+
 
 @app.route('/')
 def index():
@@ -411,25 +338,24 @@ def buscar():
 
 @app.route('/api/planilhas')
 def listar_planilhas():
-    """Endpoint para listar as planilhas disponíveis (apenas para debug)"""
+    """Endpoint para listar a planilha disponível (apenas para debug)"""
     planilhas = []
-    if PLANILHAS_DIR.exists():
-        for arquivo in PLANILHAS_DIR.glob("*.xlsx"):
-            data_arquivo = extrair_data_do_nome_arquivo(arquivo.name)
-            if not data_arquivo:
-                data_arquivo = datetime.fromtimestamp(arquivo.stat().st_mtime)
-            
-            planilhas.append({
-                'nome': arquivo.name,
-                'data': data_arquivo.strftime('%d/%m/%Y'),
-                'tamanho': arquivo.stat().st_size
-            })
+    arquivo_estoque = PLANILHAS_DIR / "estoque.xlsx"
+    
+    if arquivo_estoque.exists():
+        data_arquivo = datetime.fromtimestamp(arquivo_estoque.stat().st_mtime)
+        
+        planilhas.append({
+            'nome': 'estoque.xlsx',
+            'data': data_arquivo.strftime('%d/%m/%Y'),
+            'tamanho': arquivo_estoque.stat().st_size
+        })
     
     return jsonify(planilhas)
 
 @app.route('/api/debug/<codigo>')
 def debug_codigo(codigo):
-    """Endpoint para debug - mostra onde um código específico aparece"""
+    """Endpoint para debug - mostra onde um código específico aparece na planilha estoque.xlsx"""
     try:
         if not dados_carregados:
             processar_planilhas_inicializacao()
@@ -440,7 +366,7 @@ def debug_codigo(codigo):
             resultados = []
             for ocorrencia in indice_codigos[codigo_busca]:
                 resultados.append({
-                    'arquivo': ocorrencia['arquivo_origem'],
+                    'arquivo': 'estoque.xlsx',
                     'data': ocorrencia['data_arquivo'].strftime('%d/%m/%Y'),
                     'encontrados': [{
                         'codigo': ocorrencia['codigo'],
@@ -464,11 +390,11 @@ def debug_codigo(codigo):
 
 @app.route('/api/status')
 def status():
-    """Endpoint para verificar status do cache e índice"""
+    """Endpoint para verificar status do cache e índice da planilha estoque.xlsx"""
     return jsonify({
         'dados_carregados': dados_carregados,
-        'cache_planilhas': len(dados_cache),
-        'indice_codigos': len(indice_codigos),
+        'planilha_atual': 'estoque.xlsx',
+        'total_itens': len(indice_codigos),
         'cache_timestamp': cache_timestamp,
         'indice_timestamp': indice_timestamp
     })
@@ -488,7 +414,10 @@ def inicializar_sistema():
     
     print("✅ Sistema pronto para uso!")
 
+# Inicializa o sistema assim que o Gunicorn importa o arquivo.
+# ESTA É A CORREÇÃO CRUCIAL.
+inicializar_sistema()
+
 if __name__ == '__main__':
-    # Inicializar sistema na startup
-    inicializar_sistema()
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    # Este bloco agora só serve para testes locais, não para o Gunicorn.
+    app.run(debug=True, host='0.0.0.0', port=5000)
